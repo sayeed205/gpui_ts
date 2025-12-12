@@ -1,12 +1,14 @@
 {
   "name": "@hitarashi/gpui",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "exports": "./ts/gpui.ts",
   "publish": {
     "include": [
-      "README.md",
       "ts/**/*.ts",
-      "target/build/realse/libgpui.so"
+      "dist/**/*",
+      "jsr.jsonc",
+      "README.md",
+      "LICENSE"
     ]
   }
 }
