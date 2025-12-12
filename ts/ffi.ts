@@ -1,0 +1,43 @@
+import { dlopen, FFIType, suffix } from "bun:ffi";
+
+const libName = "libgpui";
+
+// Bun automatically handles suffix resolution mostly, but we can be explicit if needed.
+// However, `suffix` from bun:ffi is robust.
+// We assume target/debug path.
+
+const path = `target/debug/${libName}.${suffix}`;
+
+export const lib = dlopen(path, {
+    run_app: {
+        args: [FFIType.function],
+        returns: FFIType.void,
+    },
+    open_window: {
+        // AppRef is a pointer
+        // load_view is a function pointer
+        args: [FFIType.ptr, FFIType.function],
+        returns: FFIType.void,
+    },
+    create_div: { args: [], returns: FFIType.ptr },
+    div_flex: { args: [FFIType.ptr], returns: FFIType.void },
+    div_flex_col: { args: [FFIType.ptr], returns: FFIType.void },
+    div_size_full: { args: [FFIType.ptr], returns: FFIType.void },
+    div_w_px: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    div_h_px: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    div_size_px: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    div_p_px: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    div_m_px: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    div_gap_px: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    div_justify_center: { args: [FFIType.ptr], returns: FFIType.void },
+    div_justify_between: { args: [FFIType.ptr], returns: FFIType.void },
+    div_items_center: { args: [FFIType.ptr], returns: FFIType.void },
+    div_items_start: { args: [FFIType.ptr], returns: FFIType.void },
+    div_items_end: { args: [FFIType.ptr], returns: FFIType.void },
+    div_bg: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.void },
+    div_text_color: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.void },
+    div_child_text: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+    div_child: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+    into_element: { args: [FFIType.ptr], returns: FFIType.ptr },
+    create_text: { args: [FFIType.ptr], returns: FFIType.ptr },
+});
