@@ -46,4 +46,11 @@ export const lib = dlopen(path, {
     div_child: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     into_element: { args: [FFIType.ptr], returns: FFIType.ptr },
     create_text: { args: [FFIType.ptr], returns: FFIType.ptr },
+
+    // SVG
+    create_svg: { args: [], returns: FFIType.ptr },
+    svg_path: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+    svg_size: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    svg_text_color: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.void },
+    svg_into_element: { args: [FFIType.ptr], returns: FFIType.ptr },
 });

@@ -1,6 +1,10 @@
 import { lib } from "./ffi";
 import { JSCallback, Pointer } from "bun:ffi";
 
+export interface Element {
+    intoElement(): Pointer | null;
+}
+
 export class Window {
     // Placeholder
 }
@@ -157,7 +161,7 @@ export class Div {
         return this;
     }
 
-    child(content: Div | string): this {
+    child(content: Element | string): this {
         if (typeof content === "string") {
             // Bun needs explicit CString handling or Buffer?
             // "cstring" type argument handles Utf8 string or Buffer.
@@ -165,8 +169,8 @@ export class Div {
             // We should use Buffer.from(content + "\0") to be safe.
             const buffer = Buffer.from(content + "\0");
             lib.symbols.div_child_text(this.ptr, buffer);
-        } else if (content instanceof Div) {
-            lib.symbols.div_child(this.ptr, content.intoElement());
+        } else if (content && typeof (content as any).intoElement === 'function') {
+            lib.symbols.div_child(this.ptr, (content as Element).intoElement());
         }
         return this;
     }
@@ -176,6 +180,38 @@ export class Div {
     }
 }
 
+export class Svg implements Element {
+    ptr: Pointer | null;
+
+    constructor() {
+        this.ptr = lib.symbols.create_svg();
+    }
+
+    path(p: string): this {
+        const buffer = Buffer.from(p + "\0");
+        lib.symbols.svg_path(this.ptr, buffer);
+        return this;
+    }
+
+    size(px: number): this {
+        lib.symbols.svg_size(this.ptr, px);
+        return this;
+    }
+
+    textColor(color: number): this {
+        lib.symbols.svg_text_color(this.ptr, color);
+        return this;
+    }
+
+    intoElement(): Pointer | null {
+        return lib.symbols.svg_into_element(this.ptr);
+    }
+}
+
 export function div(): Div {
     return new Div();
+}
+
+export function svg(): Svg {
+    return new Svg();
 }

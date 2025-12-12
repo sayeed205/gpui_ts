@@ -1,9 +1,36 @@
 use gpui::prelude::*;
 use gpui::{
-    div, px, rgb, AnyElement, App, Application, Bounds, Context, Div,
-    SharedString, Size, WindowBounds, WindowOptions,
+    div, px, rgb, AnyElement, App, Application, AssetSource, Bounds, Context, Div,
+    SharedString, Size, WindowBounds, WindowOptions, Svg, svg,
 };
 use std::ffi::{c_char, c_void, CStr};
+use anyhow::Result;
+
+// --- File Assets ---
+struct FileAssets;
+
+impl AssetSource for FileAssets {
+    fn load(&self, path: &str) -> Result<Option<std::borrow::Cow<'static, [u8]>>> {
+        match std::fs::read(path) {
+            Ok(data) => Ok(Some(data.into())),
+            Err(e) => {
+               // Log error?
+               eprintln!("Error loading asset {}: {:?}", path, e);
+               Err(e.into())
+            }
+        }
+    }
+
+    fn list(&self, path: &str) -> Result<Vec<SharedString>> {
+        Ok(std::fs::read_dir(path)?
+            .filter_map(|entry| {
+                Some(SharedString::from(
+                    entry.ok()?.path().to_string_lossy().into_owned(),
+                ))
+            })
+            .collect::<Vec<_>>())
+    }
+}
 
 // --- FFI Types ---
 
@@ -12,16 +39,19 @@ pub struct AppRef(*mut c_void);
 
 // Wrappers to allow "in-place" mutation via standard FFI calls without returning new pointers
 pub struct DivWrapper(Option<Div>);
+pub struct SvgWrapper(Option<Svg>);
 pub struct TextWrapper(SharedString);
 
 // --- Entry Points ---
 
 #[no_mangle]
 pub extern "C" fn run_app(on_init: extern "C" fn(AppRef)) {
-    Application::new().run(move |cx: &mut App| {
-        let app_ptr = cx as *mut App as *mut c_void;
-        on_init(AppRef(app_ptr));
-    });
+    Application::new()
+        .with_assets(FileAssets)
+        .run(move |cx: &mut App| {
+            let app_ptr = cx as *mut App as *mut c_void;
+            on_init(AppRef(app_ptr));
+        });
 }
 
 #[no_mangle]
@@ -217,4 +247,52 @@ pub extern "C" fn create_text(copy: *const c_char) -> *mut c_void {
     let ss: SharedString = s.into();
     let any: AnyElement = ss.into_any_element();
     Box::into_raw(Box::new(any)) as *mut c_void
+}
+
+// --- SVG ---
+
+#[no_mangle]
+pub extern "C" fn create_svg() -> *mut SvgWrapper {
+    Box::into_raw(Box::new(SvgWrapper(Some(svg())))) as *mut SvgWrapper
+}
+
+#[no_mangle]
+pub extern "C" fn svg_path(ptr: *mut SvgWrapper, path: *const c_char) {
+    if ptr.is_null() || path.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    let c_str = unsafe { CStr::from_ptr(path) };
+    let s = c_str.to_string_lossy().to_string();
+    if let Some(d) = w.0.take() {
+        w.0 = Some(d.path(s));
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn svg_size(ptr: *mut SvgWrapper, size: f32) {
+    if ptr.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    if let Some(d) = w.0.take() {
+        w.0 = Some(d.size(px(size)));
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn svg_text_color(ptr: *mut SvgWrapper, color: u32) {
+    if ptr.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    if let Some(d) = w.0.take() {
+        w.0 = Some(d.text_color(rgb(color)));
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn svg_into_element(ptr: *mut SvgWrapper) -> *mut c_void {
+    if ptr.is_null() { return std::ptr::null_mut(); }
+    let w = unsafe { Box::from_raw(ptr) };
+    if let Some(d) = w.0 {
+        let any: AnyElement = d.into_any_element();
+        Box::into_raw(Box::new(any)) as *mut c_void
+    } else {
+        std::ptr::null_mut()
+    }
 }
