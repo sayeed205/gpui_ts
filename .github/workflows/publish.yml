@@ -84,6 +84,10 @@ jobs:
       - name: Display Structure
         run: ls -R dist
 
+      - name: Un-ignore dist for JSR
+        run: sed -i '/dist/d' .gitignore
+        # Alternatively, verified via checking file content if needed, but sed is robust enough here.
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
