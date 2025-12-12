@@ -5,10 +5,12 @@ This document tracks the status of standard GPUI APIs exposed to Bun via FFI.
 ## Implemented
 
 ### Application & Window
+
 - [x] `App.run(callback)` - Start the application
 - [x] `App.openWindow(appPtr, builder)` - Open a new window
 
 ### Element: Div / Layout
+
 - [x] `flex()` - Display flex
 - [x] `flexCol()` - Flex direction column
 - [x] `sizeFull()` - Width and height 100%
@@ -25,45 +27,49 @@ This document tracks the status of standard GPUI APIs exposed to Bun via FFI.
 - [x] `itemsEnd()`
 
 ### Element: Styling
+
 - [x] `bg(color)` - Background color (hex)
 - [x] `textColor(color)` - Text color (hex)
 
-### Structure
-- [x] `child(string | Div)` - Add text or element child
+### Text Formatting
+
+- [x] `textSize(px)`
+- [x] `fontWeight(weight)`
+- [x] `fontFamily(name)`
+- [x] `lineHeight(px)`
 
 ## Pending
 
 ### Events
+
 - [ ] `onClick(callback)`
 - [ ] `onHover(callback)`
 - [ ] `onScroll(callback)`
 - [ ] `onKeyDown(callback)`
 
 ### Layout (Comprehensive)
+
 - [ ] `relative()`, `absolute()`
 - [ ] `inset(px)`, `top(px)`, `left(px)`, etc.
 - [ ] `zIndex(int)`
 - [ ] `overflowHidden()`, `overflowScroll()`
 
 ### Styling (Comprehensive)
+
 - [ ] `border(width)`
 - [ ] `borderColor(color)`
 - [ ] `rounded(px)` - Border radius
 - [ ] `shadow(size)`
 - [ ] `opacity(float)`
 
-### Text Formatting
-- [ ] `fontSize(px)`
-- [ ] `fontWeight(weight)`
-- [ ] `fontFamily(name)`
-- [ ] `lineHeight(px)`
-
 ### Form Elements
+
 - [ ] Input / Text Entry
 - [ ] Checkbox
 - [ ] Canvas / Custom Paint
 
 ### Window Management
+
 - [ ] Set Window Title
 - [ ] Resize Window
 - [ ] Quit Application
