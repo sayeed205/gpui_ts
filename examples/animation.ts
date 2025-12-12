@@ -1,6 +1,5 @@
 import {App, div, svg} from "../ts/gpui";
 
-console.log("Running Animation Example");
 
 const ARROW_CIRCLE_SVG = "examples/image/arrow_circle.svg";
 
@@ -18,19 +17,17 @@ App.run((appPtr) => {
                     .flex()
                     .flexCol()
                     .sizeFull()
-                    .justifyBetween() // justify_around
+                    .justifyBetween()
                     .child(
                         div()
                             .flex()
                             .flexCol()
                             .h(150)
-                            //.overflowYScroll() // removed
                             .sizeFull()
-                            //.flex1() // not implemented
                             .justifyCenter()
                             .itemsCenter()
-                            .textSize(24) // text_xl approx
-                            .gap(16) // gap_4 approx
+                            .textSize(24)
+                            .gap(16)
                             .child("Hello Animation")
                             .child(
                                 svg()
@@ -39,7 +36,7 @@ App.run((appPtr) => {
                                     .textColor(0x000000)
                                     .withAnimation(
                                         "image_circle",
-                                        2, // 2 seconds
+                                        2,
                                         (s, delta) => {
                                             s.rotate(delta);
                                         }
