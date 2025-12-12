@@ -1,0 +1,5 @@
+{
+  "name": "@hitarashi/gpui",
+  "version": "0.0.1",
+  "exports": "./ts/gpui.ts"
+}
