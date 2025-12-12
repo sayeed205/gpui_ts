@@ -1,6 +1,5 @@
-import { App, div, svg } from "../ts/gpui";
-
-console.log("Running SVG Icon Example");
+import {App, div, svg} from "../ts/gpui";
+import {Heart} from 'lucide-static';
 
 // Load from file (relative to project root)
 const CHECK_ICON = "examples/image/arrow_circle.svg";
@@ -19,10 +18,14 @@ App.run((appPtr) => {
                 div().textColor(0xffffff).textSize(24).child("SVG Support")
             )
             .child(
-                svg()
-                    .path(CHECK_ICON)
-                    .size(48)
-                    .textColor(0x00ff00)
+                div().flex().child(
+                    svg()
+                        .path(Heart)
+                        .size(48)
+                        .textColor(0x00ff00)
+                ).child(
+                    svg().path(CHECK_ICON).size(48).textColor(0xfff)
+                )
             )
             .child(
                 div().textColor(0xaaaaaa).child("Green Checkmark should appear above")
