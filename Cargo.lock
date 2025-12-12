@@ -2013,7 +2013,6 @@ dependencies = [
 name = "gpui"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "gpui 0.2.2",
 ]
 

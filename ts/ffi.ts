@@ -53,4 +53,17 @@ export const lib = dlopen(path, {
     svg_size: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
     svg_text_color: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.void },
     svg_into_element: { args: [FFIType.ptr], returns: FFIType.ptr },
+
+    // Animation / Scroll
+    svg_rotate: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    svg_with_animation: {
+        args: [
+            FFIType.ptr,
+            FFIType.ptr,
+            FFIType.f32,
+            FFIType.bool,
+            FFIType.function
+        ],
+        returns: FFIType.void
+    },
 });

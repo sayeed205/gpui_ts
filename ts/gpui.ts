@@ -1,4 +1,5 @@
 import { lib } from "./ffi";
+import { readFileSync, existsSync } from "node:fs";
 import { JSCallback, Pointer } from "bun:ffi";
 
 export interface Element {
@@ -183,12 +184,29 @@ export class Div {
 export class Svg implements Element {
     ptr: Pointer | null;
 
-    constructor() {
-        this.ptr = lib.symbols.create_svg();
+    constructor(ptr?: Pointer) {
+        if (ptr) {
+            this.ptr = ptr;
+        } else {
+            this.ptr = lib.symbols.create_svg();
+        }
     }
 
     path(p: string): this {
-        const buffer = Buffer.from(p + "\0");
+        let content = p;
+        if (!p.trim().startsWith("<")) {
+            try {
+                if (existsSync(p)) {
+                    content = readFileSync(p, "utf-8");
+                } else {
+                    console.warn(`SVG path not found: ${p}`);
+                }
+            } catch (e) {
+                console.error(`Error reading SVG file ${p}:`, e);
+            }
+        }
+
+        const buffer = Buffer.from(content + "\0");
         lib.symbols.svg_path(this.ptr, buffer);
         return this;
     }
@@ -200,6 +218,32 @@ export class Svg implements Element {
 
     textColor(color: number): this {
         lib.symbols.svg_text_color(this.ptr, color);
+        return this;
+    }
+
+    rotate(angle: number): this {
+        lib.symbols.svg_rotate(this.ptr, angle);
+        return this;
+    }
+
+    withAnimation(id: string, duration: number, callback: (svg: Svg, delta: number) => void): this {
+        const buffer = Buffer.from(id + "\0");
+        const cb = new JSCallback(
+            (svgPtr: any, delta: number) => {
+                const svg = new Svg(svgPtr);
+                callback(svg, delta);
+            },
+            {
+                args: ["ptr", "f32"],
+                returns: "void",
+            }
+        );
+        // @ts-ignore
+        (globalThis as any)._keep_alive = (globalThis as any)._keep_alive || [];
+        // @ts-ignore
+        (globalThis as any)._keep_alive.push(cb);
+
+        lib.symbols.svg_with_animation(this.ptr, buffer, duration, true, cb.ptr);
         return this;
     }
 

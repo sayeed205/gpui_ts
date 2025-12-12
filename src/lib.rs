@@ -1,34 +1,22 @@
 use gpui::prelude::*;
 use gpui::{
-    div, px, rgb, AnyElement, App, Application, AssetSource, Bounds, Context, Div,
-    SharedString, Size, WindowBounds, WindowOptions, Svg, svg,
+    bounce, div, ease_in_out, percentage, px, rgb, svg, Animation, AnimationExt, AnyElement,
+    App, Application, AssetSource, Bounds, Context, Div,
+    SharedString, Size, Svg, Transformation, WindowBounds, WindowOptions,
 };
 use std::ffi::{c_char, c_void, CStr};
-use anyhow::Result;
+use std::time::Duration;
 
 // --- File Assets ---
 struct FileAssets;
 
 impl AssetSource for FileAssets {
-    fn load(&self, path: &str) -> Result<Option<std::borrow::Cow<'static, [u8]>>> {
-        match std::fs::read(path) {
-            Ok(data) => Ok(Some(data.into())),
-            Err(e) => {
-               // Log error?
-               eprintln!("Error loading asset {}: {:?}", path, e);
-               Err(e.into())
-            }
-        }
+    fn load(&self, path: &str) -> gpui::Result<Option<std::borrow::Cow<'static, [u8]>>> {
+        Ok(Some(path.to_string().into_bytes().into()))
     }
 
-    fn list(&self, path: &str) -> Result<Vec<SharedString>> {
-        Ok(std::fs::read_dir(path)?
-            .filter_map(|entry| {
-                Some(SharedString::from(
-                    entry.ok()?.path().to_string_lossy().into_owned(),
-                ))
-            })
-            .collect::<Vec<_>>())
+    fn list(&self, _path: &str) -> gpui::Result<Vec<SharedString>> {
+        Ok(vec![])
     }
 }
 
@@ -39,7 +27,10 @@ pub struct AppRef(*mut c_void);
 
 // Wrappers to allow "in-place" mutation via standard FFI calls without returning new pointers
 pub struct DivWrapper(Option<Div>);
-pub struct SvgWrapper(Option<Svg>);
+pub struct SvgWrapper {
+    inner: Option<Svg>,
+    converted: Option<AnyElement>,
+}
 pub struct TextWrapper(SharedString);
 
 // --- Entry Points ---
@@ -140,7 +131,7 @@ macro_rules! impl_div_color {
 
 #[no_mangle]
 pub extern "C" fn create_div() -> *mut DivWrapper {
-    Box::into_raw(Box::new(DivWrapper(Some(div())))) as *mut DivWrapper
+    Box::into_raw(Box::new(DivWrapper(Some(div()))))
 }
 
 // Layout & Style
@@ -253,7 +244,10 @@ pub extern "C" fn create_text(copy: *const c_char) -> *mut c_void {
 
 #[no_mangle]
 pub extern "C" fn create_svg() -> *mut SvgWrapper {
-    Box::into_raw(Box::new(SvgWrapper(Some(svg())))) as *mut SvgWrapper
+    Box::into_raw(Box::new(SvgWrapper {
+        inner: Some(svg()),
+        converted: None,
+    }))
 }
 
 #[no_mangle]
@@ -262,8 +256,8 @@ pub extern "C" fn svg_path(ptr: *mut SvgWrapper, path: *const c_char) {
     let w = unsafe { &mut *ptr };
     let c_str = unsafe { CStr::from_ptr(path) };
     let s = c_str.to_string_lossy().to_string();
-    if let Some(d) = w.0.take() {
-        w.0 = Some(d.path(s));
+    if let Some(d) = w.inner.take() {
+        w.inner = Some(d.path(s));
     }
 }
 
@@ -271,8 +265,8 @@ pub extern "C" fn svg_path(ptr: *mut SvgWrapper, path: *const c_char) {
 pub extern "C" fn svg_size(ptr: *mut SvgWrapper, size: f32) {
     if ptr.is_null() { return; }
     let w = unsafe { &mut *ptr };
-    if let Some(d) = w.0.take() {
-        w.0 = Some(d.size(px(size)));
+    if let Some(d) = w.inner.take() {
+        w.inner = Some(d.size(px(size)));
     }
 }
 
@@ -280,8 +274,8 @@ pub extern "C" fn svg_size(ptr: *mut SvgWrapper, size: f32) {
 pub extern "C" fn svg_text_color(ptr: *mut SvgWrapper, color: u32) {
     if ptr.is_null() { return; }
     let w = unsafe { &mut *ptr };
-    if let Some(d) = w.0.take() {
-        w.0 = Some(d.text_color(rgb(color)));
+    if let Some(d) = w.inner.take() {
+        w.inner = Some(d.text_color(rgb(color)));
     }
 }
 
@@ -289,10 +283,59 @@ pub extern "C" fn svg_text_color(ptr: *mut SvgWrapper, color: u32) {
 pub extern "C" fn svg_into_element(ptr: *mut SvgWrapper) -> *mut c_void {
     if ptr.is_null() { return std::ptr::null_mut(); }
     let w = unsafe { Box::from_raw(ptr) };
-    if let Some(d) = w.0 {
+    if let Some(any) = w.converted {
+        Box::into_raw(Box::new(any)) as *mut c_void
+    } else if let Some(d) = w.inner {
         let any: AnyElement = d.into_any_element();
         Box::into_raw(Box::new(any)) as *mut c_void
     } else {
         std::ptr::null_mut()
+    }
+}
+
+// div_overflow_y_scroll removed due to API mismatch
+
+#[no_mangle]
+pub extern "C" fn svg_rotate(ptr: *mut SvgWrapper, angle: f32) {
+    if ptr.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    if let Some(d) = w.inner.take() {
+        w.inner = Some(d.with_transformation(Transformation::rotate(percentage(angle))));
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn svg_with_animation(
+    ptr: *mut SvgWrapper,
+    id: *const c_char,
+    duration_secs: f32,
+    repeat: bool,
+    cb: extern "C" fn(*mut SvgWrapper, f32),
+) {
+    if ptr.is_null() || id.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    let c_str = unsafe { CStr::from_ptr(id) };
+    let id_str = c_str.to_string_lossy().to_string();
+    let id_ss = SharedString::from(id_str);
+
+    if let Some(d) = w.inner.take() {
+        let mut anim = Animation::new(Duration::from_secs_f32(duration_secs));
+        if repeat {
+            anim = anim.repeat();
+        }
+        // Hardcoded ease_in_out bounce for the example
+        anim = anim.with_easing(bounce(ease_in_out));
+
+        let animated = d.with_animation(
+            id_ss,
+            anim,
+            move |svg, delta| {
+                let mut wrapper = SvgWrapper { inner: Some(svg), converted: None };
+                let wrapper_ptr = &mut wrapper as *mut SvgWrapper;
+                cb(wrapper_ptr, delta);
+                wrapper.inner.expect("Callback logic error")
+            },
+        );
+        w.converted = Some(animated.into_any_element());
     }
 }
