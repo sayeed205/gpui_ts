@@ -2011,7 +2011,7 @@ dependencies = [
 
 [[package]]
 name = "gpui"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "gpui 0.2.2",
 ]
