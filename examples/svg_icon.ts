@@ -1,11 +1,11 @@
-import {App, div, svg} from "../ts/gpui";
-import {Heart} from 'lucide-static';
+import { App, div, svg } from "../ts/gpui";
+import { Heart } from 'lucide-static';
 
 // Load from file (relative to project root)
 const CHECK_ICON = "examples/image/arrow_circle.svg";
 
 App.run((appPtr) => {
-    App.openWindow(appPtr, () => {
+    App.openWindow(appPtr, "SVG Icon Example", () => {
         return div()
             .flex()
             .flexCol()

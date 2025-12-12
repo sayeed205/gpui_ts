@@ -1,4 +1,4 @@
-import {App, div} from "../ts/gpui";
+import { App, div } from "../ts/gpui";
 
 
 function coloredBox(color: number, w: number = 50, h: number = 50) {
@@ -6,8 +6,9 @@ function coloredBox(color: number, w: number = 50, h: number = 50) {
 }
 
 App.run((appPtr) => {
-    App.openWindow(appPtr, () => {
+    App.openWindow(appPtr, "Layout Example", () => {
         try {
+            // Log to confirm execution
             return div()
                 .flex()
                 .flexCol()

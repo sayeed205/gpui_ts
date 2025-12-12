@@ -1,10 +1,10 @@
-import {App, div, svg} from "../ts/gpui";
+import { App, div, svg } from "../ts/gpui";
 
 
 const ARROW_CIRCLE_SVG = "examples/image/arrow_circle.svg";
 
 App.run((appPtr) => {
-    App.openWindow(appPtr, () => {
+    App.openWindow(appPtr, "Animation Example", () => {
         return div()
             .flex()
             .flexCol()

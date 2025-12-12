@@ -2,7 +2,8 @@ use gpui::prelude::*;
 use gpui::{
     bounce, div, ease_in_out, percentage, px, rgb, svg, Animation, AnimationExt, AnyElement,
     App, Application, AssetSource, Bounds, Context, Div,
-    SharedString, Size, Svg, Transformation, WindowBounds, WindowOptions,
+    SharedString, Size, Svg, TitlebarOptions, Transformation, WindowBounds, WindowDecorations,
+    WindowOptions,
 };
 use std::ffi::{c_char, c_void, CStr};
 use std::time::Duration;
@@ -46,8 +47,14 @@ pub extern "C" fn run_app(on_init: extern "C" fn(AppRef)) {
 }
 
 #[no_mangle]
-pub extern "C" fn open_window(app_ref: AppRef, load_view: extern "C" fn() -> *mut c_void) {
+pub extern "C" fn open_window(app_ref: AppRef, title: *const c_char, load_view: extern "C" fn() -> *mut c_void) {
     let cx = unsafe { &mut *(app_ref.0 as *mut App) };
+
+    let title_str = if !title.is_null() {
+        unsafe { CStr::from_ptr(title).to_string_lossy().into_owned() }
+    } else {
+        "GPUI App".to_string()
+    };
 
     let bounds = Bounds::centered(
         None,
@@ -60,6 +67,11 @@ pub extern "C" fn open_window(app_ref: AppRef, load_view: extern "C" fn() -> *mu
     cx.open_window(
         WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
+            titlebar: Some(TitlebarOptions {
+                title: Some(SharedString::from(title_str)),
+                ..Default::default()
+            }),
+            window_decorations: Some(WindowDecorations::Server),
             ..Default::default()
         },
         move |_, cx| {

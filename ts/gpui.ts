@@ -29,7 +29,7 @@ export class App {
         cb.close();
     }
 
-    static openWindow(appPtr: Pointer | null, viewBuilder: () => Div) {
+    static openWindow(appPtr: Pointer | null, title: string, viewBuilder: () => Div) {
         const cb = new JSCallback(
             () => {
                 const div = viewBuilder();
@@ -42,7 +42,8 @@ export class App {
             }
         );
 
-        lib.symbols.open_window(appPtr, cb.ptr);
+        const titlePtr = Buffer.from(title + "\0");
+        lib.symbols.open_window(appPtr, titlePtr, cb.ptr);
 
         // Keep alive for Bun too?
         // JSCallback in Bun is automatically GC'd if not held.

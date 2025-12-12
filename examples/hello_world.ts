@@ -3,7 +3,7 @@ import { App, div } from "../ts/gpui";
 console.log("Running Hello World Example");
 
 App.run((appPtr) => {
-    App.openWindow(appPtr, () => {
+    App.openWindow(appPtr, "Hello World", () => {
         return div()
             .flex()
             .flexCol()
