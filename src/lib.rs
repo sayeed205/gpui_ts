@@ -32,7 +32,7 @@ pub struct SvgWrapper {
     inner: Option<Svg>,
     converted: Option<AnyElement>,
 }
-pub struct TextWrapper(SharedString);
+pub struct TextWrapper(#[allow(dead_code)] SharedString);
 
 // --- Entry Points ---
 

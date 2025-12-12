@@ -6,29 +6,88 @@ on:
       - master
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write # The OIDC ID token is used for authentication with JSR.
+  build:
+    name: Build - ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      matrix:
+        platform:
+          - name: Linux
+            os: ubuntu-latest
+            os_id: linux
+            arch: x64
+            artifact_name: libgpui.so
+            target_ext: so
+          - name: MacOS
+            os: macos-latest
+            os_id: macos
+            arch: x64
+            artifact_name: libgpui.dylib
+            target_ext: dylib
+          - name: Windows
+            os: windows-latest
+            os_id: windows
+            arch: x64
+            artifact_name: gpui.dll
+            target_ext: dll
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype6-dev
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
 
+      - name: Build Rust Library
+        shell: bash
+        run: cargo build --release
+
+      - name: Rename Artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          SRC="target/release/${{ matrix.platform.artifact_name }}"
+          DEST="dist/libgpui-${{ matrix.platform.os_id }}-${{ matrix.platform.arch }}.${{ matrix.platform.target_ext }}"
+          
+          echo "Copying $SRC to $DEST"
+          cp "$SRC" "$DEST"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libgpui-${{ matrix.platform.os_id }}
+          path: dist/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: libgpui-*
+          path: dist
+          merge-multiple: true
+
+      - name: Display Structure
+        run: ls -R dist
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build Rust Library
-        run: cargo build --release
 
       - name: Publish to JSR
         run: bun x jsr publish

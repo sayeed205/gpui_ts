@@ -1,16 +1,42 @@
 import { dlopen, FFIType, suffix } from "bun:ffi";
+import { join } from "node:path";
+import { existsSync } from "node:fs";
 
+function getLibPath(): string {
+    const platform = process.platform;
+    const arch = process.arch;
 
-declare const IS_STANDALONE: boolean;
+    // 1. Try Dist (Published)
+    let osMap: Record<string, string> = {
+        "linux": "linux",
+        "darwin": "macos",
+        "win32": "windows"
+    };
+    const os = osMap[platform] || platform;
 
-let libDir = 'target/debug';
-if (typeof IS_STANDALONE !== "undefined" && IS_STANDALONE) {
-    libDir = 'target/release';
+    // We enforce 'libgpui-' prefix in our build workflow for consistency in dist/
+    const distFile = `libgpui-${os}-${arch}.${suffix}`;
+    const distPath = join(import.meta.dir, "..", "dist", distFile);
+
+    if (existsSync(distPath)) return distPath;
+
+    // 2. Try Local Target (Development)
+    // Rust typically names: libgpui.so, libgpui.dylib, gpui.dll
+    const names = [`libgpui.${suffix}`, `gpui.${suffix}`];
+    const dirs = ["release", "debug"];
+
+    for (const dir of dirs) {
+        for (const name of names) {
+            const candidate = join(import.meta.dir, "..", "target", dir, name);
+            if (existsSync(candidate)) return candidate;
+        }
+    }
+
+    throw new Error(`GPUI Library not found. Checked dist/ and target/ (debug/release). Platform: ${platform}-${arch}`);
 }
-const path = `${libDir}/libgpui.${suffix}`
 
 
-export const lib = dlopen(path, {
+export const lib = dlopen(getLibPath(), {
     run_app: {
         args: [FFIType.function],
         returns: FFIType.void,
