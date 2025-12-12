@@ -136,6 +136,27 @@ export class Div {
         return this;
     }
 
+    textSize(px: number): this {
+        lib.symbols.div_text_size(this.ptr, px);
+        return this;
+    }
+
+    lineHeight(px: number): this {
+        lib.symbols.div_line_height(this.ptr, px);
+        return this;
+    }
+
+    fontFamily(name: string): this {
+        const buffer = Buffer.from(name + "\0");
+        lib.symbols.div_font_family(this.ptr, buffer);
+        return this;
+    }
+
+    fontWeight(weight: number): this {
+        lib.symbols.div_font_weight(this.ptr, weight);
+        return this;
+    }
+
     child(content: Div | string): this {
         if (typeof content === "string") {
             // Bun needs explicit CString handling or Buffer?

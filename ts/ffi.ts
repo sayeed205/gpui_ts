@@ -36,6 +36,12 @@ export const lib = dlopen(path, {
     div_items_end: { args: [FFIType.ptr], returns: FFIType.void },
     div_bg: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.void },
     div_text_color: { args: [FFIType.ptr, FFIType.u32], returns: FFIType.void },
+    // Text Styling
+    div_text_size: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    div_line_height: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+    div_font_family: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
+    div_font_weight: { args: [FFIType.ptr, FFIType.f32], returns: FFIType.void },
+
     div_child_text: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     div_child: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
     into_element: { args: [FFIType.ptr], returns: FFIType.ptr },

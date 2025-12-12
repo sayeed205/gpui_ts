@@ -1,4 +1,4 @@
-import {App, div} from "./ts/gpui";
+import { App, div } from "./ts/gpui";
 
 console.log("Starting GPUI App via TS FFI");
 
@@ -22,8 +22,9 @@ App.run((appPtr) => {
                     .flexCol()
                     .child(
                         div()
-                            .textColor(0xffffff)
-                            .child("Hello from Bun!")
+                            .textColor(0xff0000)
+                            .textSize(32)
+                            .child("Hello Styled Text!")
                     )
                     .child(
                         div()

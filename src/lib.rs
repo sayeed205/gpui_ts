@@ -171,21 +171,46 @@ pub extern "C" fn into_element(ptr: *mut DivWrapper) -> *mut c_void {
 
 
 #[no_mangle]
-pub extern "C" fn create_text(copy: *const c_char) -> *mut c_void {
-    // For simplicity, directly returning ElementRef for text,
-    // as we don't have a separate builder for text properties yet (usually done on parent or via attributes).
-    // GPUI text usually inherits or is just a string child?
-    // Wait, `div().child("foo")` works.
-    // If we want a standalone text element (like `div().child(text_element)`),
-    // GPUI doesn't have a standalone `Text` element struct in the same way, mostly it's strings or params.
-    // But we can wrap it in a div or just return a SharedString if we had a generic child adder.
-    // `div_child` takes `ElementRef`.
-    // We can make a "text element" be a `div` containing text or just use `div_child_text`.
-    // Let's rely on `div_child_text` for now for simplicity,
-    // OR create a wrapper around `SharedString` if we really need independent text nodes.
-    // But `div().child(IntoElement)`... `SharedString` impls `IntoElement`.
-    // `IntoElement::into_any_element(string)` works.
+pub extern "C" fn div_text_size(ptr: *mut DivWrapper, val: f32) {
+    if ptr.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    if let Some(d) = w.0.take() {
+        w.0 = Some(d.text_size(px(val)));
+    }
+}
 
+#[no_mangle]
+pub extern "C" fn div_line_height(ptr: *mut DivWrapper, val: f32) {
+    if ptr.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    if let Some(d) = w.0.take() {
+        w.0 = Some(d.line_height(px(val)));
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn div_font_family(ptr: *mut DivWrapper, family: *const c_char) {
+    if ptr.is_null() || family.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    let c_str = unsafe { CStr::from_ptr(family) };
+    let s = c_str.to_string_lossy().to_string();
+    if let Some(d) = w.0.take() {
+        w.0 = Some(d.font_family(s));
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn div_font_weight(ptr: *mut DivWrapper, weight: f32) {
+    if ptr.is_null() { return; }
+    let w = unsafe { &mut *ptr };
+    if let Some(d) = w.0.take() {
+        // gpui::FontWeight(f32)
+        w.0 = Some(d.font_weight(gpui::FontWeight(weight)));
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn create_text(copy: *const c_char) -> *mut c_void {
     if copy.is_null() { return std::ptr::null_mut(); }
     let c_str = unsafe { CStr::from_ptr(copy) };
     let s = c_str.to_string_lossy().to_string();
